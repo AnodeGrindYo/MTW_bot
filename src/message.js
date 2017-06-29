@@ -234,7 +234,7 @@ function makeQuickReply(btntitle, buttons)
  * - cardTitle: le titre (un string)
  * - cardSubtitle: le sous-titre (un string)
  * - imageUrl: l'adresse de l'image (un string)
- * - buttons: un tableau qui contient des boutons (faits avec la fonction makeBtnMsg)
+ * - buttons: un tableau qui contient des boutons (faits avec la fonction makeBtnMsg, de la forme buttons[i] = un bouton)
  * 
  */
 function makeCard(cardTitle, cardSubtitle, cardImageUrl, buttons)
@@ -290,7 +290,7 @@ function makeBtnMsg(btnMsgTitle, buttons)
  * paramètres:
  * - cardTitle: un string, le titre de la card
  * - cardImageUrl: l'url de l'image de la card
- * - buttons: un tableau qui contient des boutons (faits avec la fonction makeBtnMsg)
+ * - buttons: un tableau qui contient des boutons (faits avec la fonction makeBtnMsg, de la forme buttons[i] = un bouton)
  */
 function makeCardForCarousel(cardTitle, cardImageUrl, buttons)
 {
@@ -323,7 +323,7 @@ function makeCarousel(carouselTitle, cardArray)
   carousel['type'] = 'carousel';
   carousel['content'] = cardArray;
   return carousel;
-}
+};
 
 /*
  * Cette fonction sert à créer les éléments qui seront ajoutés à un tableau d'éléments
@@ -332,9 +332,73 @@ function makeCarousel(carouselTitle, cardArray)
  * - elTitle: le titre de l'élément
  * - imageUrl: l'url de l'image
  * - subtitle: le sous-titre (quoi, vous codez et vous ne parlez pas anglais? seriously???)
- * - buttons:  un tableau qui contient des boutons (faits avec la fonction makeBtnMsg)
+ * - buttons:  un tableau qui contient des boutons (faits avec la fonction makeBtnMsg, de la forme buttons[i] = un bouton)
  */
 function makeElement(elTitle, imageUrl, subtitle, buttons)
 {
-  
-}
+  var element = {};
+  element['title'] = elTitle;
+  element['imageUrl'] = imageUrl;
+  element['subtitle'] = subtitle;
+  element['buttons'] = [];
+  if(Object.keys(buttons).length > 0)
+  {
+    for (var i=0; i<Object.keys(buttons).length; i++)
+    {
+      var btn = {};
+      btn.title = buttons[i]['title'];
+      btn.value = buttons[i]['value'];
+      element['buttons'].push(btn);
+    }
+  }
+  return element;
+};
+
+/*
+ * Cette fonction sert à créer des images de type "List"
+ *
+ * paramètres:
+ * - elementArray: un tableau numéroté d'éléments de la forme elementArray[i] = un élément
+ * - buttons: un tableau de boutons (faits avec la fonction makeBtnMsg, de la forme buttons[i] = un bouton)
+ */
+function makeList(elementArray, buttons)
+{
+  var listMsg = {} ;
+  listMsg['content'] = {};
+  listMsg['content']['elements'] = [];
+  listMsg['content']['buttons'] = [];
+  if(Object.keys(buttons).length > 0)
+  {
+    for(var i=0; i<Object.keys(buttons).length; i++)
+    {
+      var btn = {};
+      btn.title = buttons[i]['title'];
+      btn.value = buttons[i]['value'];
+      listMsg['content']['buttons'].push(btn);
+    }
+  }
+  if(Object.keys(elementArray).length > 0)
+  {
+    for(var i=0; i<Object.keys(elementArray).length; i++)
+    {
+      listMsg['content']['elements'].push(elementArray[i]);
+    }
+  }
+  return listMsg;
+};
+
+/*
+ * Cette fonction sert à faire des messages de type "image" ou des messages de type "vidéo"
+ *
+ * paramètres:
+ * - url: l'adresse URL de l'image (un string)
+ */
+function makePicOrVideo(url)
+{
+  var msg = {};
+  msg['type'] = 'picture';
+  msg['content'] = imgUrl;
+  return msg;
+};
+
+// error: line not found !
