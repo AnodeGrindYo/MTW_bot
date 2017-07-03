@@ -2,33 +2,22 @@
  * message.js
  * This file contains your bot code
  */
-/*
- * message.js
- * Ce fichier contient le code du bot
- */
 
-const recastai = require('recastai');
+const recastai = require('recastai')
 
 // This function is the core of the bot behaviour
-// Cette fonction est le coeur du fonctionnement du bot
-const replyMessage = (message) => 
-{
+const replyMessage = (message) => {
   // Instantiate Recast.AI SDK, just for request service
-  // Instancie le SDK de Recast.AI pour le service de requêtes
-  const request = new recastai.request(process.env.REQUEST_TOKEN, process.env.LANGUAGE);
+  const request = new recastai.request(process.env.REQUEST_TOKEN, process.env.LANGUAGE)
   // Get text from message received
-  // Obtient le texte du message reçu
-  const text = message.content;
+  const text = message.content
 
-  console.log('I receive: ', text);
-
+  console.log('I receive: ', text)
 
   // Get senderId to catch unique conversation_token
-  // Obtient le senderId qui est le token unique de la conversation
   const senderId = message.senderId
 
   // Call Recast.AI SDK, through /converse route
-  // Appel du SDK de Recast.AI à travers la route de conversation
   request.converseText(text, { conversationToken: senderId })
   .then(result => {
     /*
@@ -38,38 +27,13 @@ const replyMessage = (message) =>
     * Or: Update your mongo DB
     * etc...
     */
-   /*
-    * NOTRE CODE VA ICI !
-    * Ici, on peut ajouter notre propre process
-    * Ex: Appel à une API externe
-    * Ou mettre à jour une BDD, etc
-    */
+    var devToken = 'fca3215abc3eeec7df0ca5fcd4e943d6';
+    var intent = getIntent(devToken, text);
+    var entitiesArray = getEntities(intent);
+    var actionSlug = result.action? result.action.slug : null;
+    //message.addReply({type: 'text', content:'test'});
+    //message.reply();
 
-    ///////////////////  TEST  ///////////////////////////
-    // récupère le nom de l'intention identifiée par l'IA
-    var requestIntent = new recastai.request('fca3215abc3eeec7df0ca5fcd4e943d6');
-    requestIntent.analyseText(text)
-    .then(function(res) 
-    {
-      var intent = res.intent()
-      //console.log("intent : "+JSON.stringify(intent)) // l'intention liée au message
-      //console.log("message JSON: "+JSON.stringify(message)) // le corps du message
-      //console.log("res : "+JSON.stringify(res)) // reçoit le JSON entier
-      //console.log("ENTITY GREETING : "+ res.entities.greeting[0].value) // récupère la value de la première entité greeting
-      console.log(getKeys(res));
-      var entitiesArray = getEntities(res);
-      var buttons = new Array();
-      var btn0 = new Array();
-      btn0['title'] = 'btn0 title';
-      btn0['value'] = 'btn0 value';
-      buttons[0] = btn0;
-      var btn1 = new Array();
-      btn1['title'] = 'btn1 title';
-      btn1['value'] = 'btn1 value';
-      buttons[1] = btn1;
-      makeQuickReply('quickRep TEST', buttons)
-    });
-    //////////////////  \TEST  /////////////////////////
 
 
     if (result.action) {
@@ -77,23 +41,52 @@ const replyMessage = (message) =>
     }
 
     // If there is not any message return by Recast.AI for this current conversation
-    // S'il n'y a pas de message retourné par Recast.AI pour la conversation courante
-    if (!result.replies.length) 
-    {
-      message.addReply({ type: 'text', content: 'Je ne sais pas répondre à ça pour l\'instant :)' })
-    } else 
-    {
+    if (!result.replies.length) {
+      message.addReply({ type: 'text', content: 'I don\'t have the reply to this yet :)' })
+    } else {
       // Add each reply received from API to replies stack
-      // Ajoute chaque réponse reçue à la pile des réponses
-      result.replies.forEach(replyContent => message.addReply({ type: 'text', content: replyContent }))
+      /*var btnArray = [];
+      btnArray[1] = makeBtn('Je cherche un service', 'je cherche un service');
+      btnArray[2] = makeBtn('Je fournis un service', 'je fournis un service');*/
+      //var replyContent = replyContent;
+      //console.log(JSON.stringify(replyContent));
+      var myReply = null;
+      console.log (result.action.slug);
+      
+      switch (actionSlug)
+      {
+        case 'greetings': myReply = { type: 'quickReplies', content:  {title: 'titre', buttons: [{title: 'je cherche un service', value: 'je cherche un service'},{title: 'je fournis un service', value: 'je fournis un service'}]}};
+                          break;
+        default:  myReply = null;
+                  break;
+      }
+      /*if (actionSlug == 'greetings')
+      {
+        console.log ('action : '+result.action.slug);
+        myReply = { type: 'quickReplies', content:  {title: 'titre', buttons: [{title: 'je cherche un service', value: 'je cherche un service'},{title: 'je fournis un service', value: 'je fournis un service'}]}};
+        console.log('test');
+      }
+      else
+      {
+        //console.log(JSON.stringify(replyContent));
+        myReply = null;
+        //myReply = { type: 'text', content: 'my text' };
+        //myReply = { type: 'text', content: replyContent };
+        //result.replies.forEach(replyContent => message.addReply({ type: 'text', content: replyContent }));
+        
+      }*/
+
+       
+      result.replies.forEach(replyContent => message.addReply((myReply != null)? myReply: { type: 'text', content: replyContent }));
+      //result.replies.forEach(replyContent => message.addReply({ type: 'quickReplies', content:  {title: 'titre', buttons: [{title: 'je cherche un service', value: 'je cherche un service'},{title: 'je fournis un service', value: 'je fournis un service'}]}}))
+      result.replies.forEach(replyContent => message.addReply({ type: 'text', content: replyContent })) // <==== message à renvoyer ici
+      //result.replies.forEach(replyContent => message.addReply({ type: 'text', content: replyContent }))
     }
 
     // Send all replies
-    // Envoie toutes les réponses
     message.reply()
     .then(() => {
       // Do some code after sending messages
-      // Si on veut effectuer du code après l'envoi des messages
     })
     .catch(err => {
       console.error('Error while sending message to channel', err)
@@ -105,8 +98,6 @@ const replyMessage = (message) =>
 }
 
 module.exports = replyMessage
-
-
 
 ///////////////// Functions //////////////////////
 
@@ -211,7 +202,9 @@ function makeQuickReply(btntitle, buttons)
 {
   var quickRep = {};
   quickRep['type'] = 'quickReplies';
-  quickRep['content'] = {title : btntitle};
+  quickRep['content']= {};
+  quickRep['content']['title'] = btntitle;
+  //quickRep['content'] = {title : btntitle};
   quickRep['content']['buttons'] = [];
   if(Object.keys(buttons).length > 0 )
   {
@@ -241,7 +234,7 @@ function makeCard(cardTitle, cardSubtitle, cardImageUrl, buttons)
 {
   var card = {};
   card['type'] = 'card';
-  card['content'] = {title: cardTitle, subtitle: cardSubtitle, imageUrl: cardImageUrl};
+  card['content'] = '{title: '+cardTitle+', subtitle: '+cardSubtitle+', imageUrl: '+cardImageUrl+'}+';
   card['content']['buttons'] = [];
   if(Object.keys(buttons).length > 0)
   {
@@ -401,4 +394,14 @@ function makePicOrVideo(url)
   return msg;
 };
 
-// error: line not found !
+function getIntent(developper_token, text)
+{
+  var requestIntent = new recastai.request(developper_token);
+    requestIntent.analyseText(text)
+    .then(function(res) 
+    {
+      var intent = res.intent()
+      return intent;
+      //var entitiesArray = getEntities(res);
+    });
+};
