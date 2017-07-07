@@ -1,14 +1,11 @@
-/*
- * message.js
- * This file contains your bot code
- */
+
 
 const recastai = require('recastai');
 var fs = require('fs');
 var vm = require('vm');
 var content = fs.readFileSync("src/private.js")
 vm.runInThisContext(content)
-//vm.runInThisContext(fs.readFileSync(__dirname + "/private.js"));
+
 
 // This function is the core of the bot behaviour
 const replyMessage = (message) => {
@@ -25,20 +22,12 @@ const replyMessage = (message) => {
   // Call Recast.AI SDK, through /converse route
   request.converseText(text, { conversationToken: senderId })
   .then(result => {
-    /*
-    * YOUR OWN CODE
-    * Here, you can add your own process.
-    * Ex: You can call any external API
-    * Or: Update your mongo DB
-    * etc...
-    */
     
     //console.log("DEV_TOKEN : "+DEV_TOKEN);
 
     var now = new Date();
     console.log("Aujourd'hui, nous sommes "+now.getDayName());
     var nextMonday = nextDateByDayName("lundi");
-    //var devToken = 'fca3215abc3eeec7df0ca5fcd4e943d6';
     var devToken = DEV_TOKEN;
     var intent = getIntent(devToken, text);
     console.log("contenu de la variable intent"+JSON.stringify(intent));
@@ -46,17 +35,8 @@ const replyMessage = (message) => {
     console.log('entitiesArray = '+JSON.stringify(entitiesArray));
     console.log("entitiesArray keys :");
     printObjectKeys(entitiesArray);
-    /*var props="";
-    for (var prop in entitiesArray)
-    { 
-      props+= prop +  " => " +entitiesArray[prop] + "\n"; 
-      console.log("prop = "+prop);
-    }
-    console.log ("Entity : "+props);*/
     var actionSlug = (result.action != undefined)? result.action.slug : null;
     var userinfo = [];
-    //message.addReply({type: 'text', content:'test'});
-    //message.reply();
 
 
 
@@ -69,11 +49,7 @@ const replyMessage = (message) => {
       message.addReply({ type: 'text', content: 'I don\'t have the reply to this yet :)' })
     } else {
       // Add each reply received from API to replies stack
-      /*var btnArray = [];
-      btnArray[1] = makeBtn('Je cherche un service', 'je cherche un service');
-      btnArray[2] = makeBtn('Je fournis un service', 'je fournis un service');*/
-      //var replyContent = replyContent;
-      //console.log(JSON.stringify(replyContent));
+
       var myReply = null;
       if (result.action.slug != undefined)
         console.log (result.action.slug);
