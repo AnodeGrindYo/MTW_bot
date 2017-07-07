@@ -3,7 +3,12 @@
  * This file contains your bot code
  */
 
-const recastai = require('recastai')
+const recastai = require('recastai');
+var fs = require('fs');
+var vm = require('vm');
+var content = fs.readFileSync("src/private.js")
+vm.runInThisContext(content)
+//vm.runInThisContext(fs.readFileSync(__dirname + "/private.js"));
 
 // This function is the core of the bot behaviour
 const replyMessage = (message) => {
@@ -27,10 +32,29 @@ const replyMessage = (message) => {
     * Or: Update your mongo DB
     * etc...
     */
-    var devToken = 'fca3215abc3eeec7df0ca5fcd4e943d6';
+    
+    //console.log("DEV_TOKEN : "+DEV_TOKEN);
+
+    var now = new Date();
+    console.log("Aujourd'hui, nous sommes "+now.getDayName());
+    var nextMonday = nextDateByDayName("lundi");
+    //var devToken = 'fca3215abc3eeec7df0ca5fcd4e943d6';
+    var devToken = DEV_TOKEN;
     var intent = getIntent(devToken, text);
-    var entitiesArray = getEntities(intent);
-    var actionSlug = result.action? result.action.slug : null;
+    console.log("contenu de la variable intent"+JSON.stringify(intent));
+    var entitiesArray = getEntities(result);
+    console.log('entitiesArray = '+JSON.stringify(entitiesArray));
+    console.log("entitiesArray keys :");
+    printObjectKeys(entitiesArray);
+    /*var props="";
+    for (var prop in entitiesArray)
+    { 
+      props+= prop +  " => " +entitiesArray[prop] + "\n"; 
+      console.log("prop = "+prop);
+    }
+    console.log ("Entity : "+props);*/
+    var actionSlug = (result.action != undefined)? result.action.slug : null;
+    var userinfo = [];
     //message.addReply({type: 'text', content:'test'});
     //message.reply();
 
@@ -51,15 +75,79 @@ const replyMessage = (message) => {
       //var replyContent = replyContent;
       //console.log(JSON.stringify(replyContent));
       var myReply = null;
-      console.log (result.action.slug);
+      if (result.action.slug != undefined)
+        console.log (result.action.slug);
       
-      switch (actionSlug)
+      if (actionSlug != null || actionSLug != undefined)
       {
-        case 'greetings': myReply = { type: 'quickReplies', content:  {title: 'titre', buttons: [{title: 'je cherche un service', value: 'je cherche un service'},{title: 'je fournis un service', value: 'je fournis un service'}]}};
-                          break;
-        default:  myReply = null;
-                  break;
+        switch (actionSlug)
+        {
+          case 'greetings':        message.addReply({ type: 'quickReplies', content:  {title: 'titre', buttons: [{title: 'je cherche un service', value: 'je cherche un service'},{title: 'je fournis un service', value: 'je fournis un service'}]}});
+                                   break;
+          case 'job-1':            if (entitiesArray['job_title'] != undefined)
+                                   {
+                                     var info = entitiesArray['job']['value'];
+                                     userinfo['job'] = info.toLowerCase();
+                                     userinfo['wants'] = 'cherche_service';
+                                     console.log("user's job : "+userinfo['job']);
+                                   }
+                                  break;
+          case 'job':             if (entitiesArray['job_title'] != undefined)
+                                   {
+                                     var info = entitiesArray['job']['value'];
+                                     userinfo['job'] = info.toLowerCase();
+                                     userinfo['wants'] = 'offre_un_service';
+                                     console.log("user's job : "+userinfo['job']);
+                                   }
+                                  break;
+          case 'user_location':   if (entitiesArray['city'] != undefined)
+                                  {
+                                    var info = entitiesArray['city']['value'];
+                                    userinfo['city'] = info.toLowerCase();
+                                    console.log("user's city : "+userinfo['city']);
+                                  }
+                                  break;
+          case 'user_location-1': if (entitiesArray['city'] != undefined)
+                                  {
+                                    var info = entitiesArray['city']['value'];
+                                    userinfo['city'] = info.toLowerCase();
+                                    console.log("user's city : "+userinfo['city']);
+                                  }
+                                  break;
+          case 'rdv':             if (entitiesArray["date"] != undefined)
+                                  {
+                                    var info = entitiesArray['date']['value'];
+                                    userinfo['rdv_date'] = info.toLowerCase();
+                                    // if (userinfo['rdv_date'] == "aujourd'hui") userinfo['rdv_date'] = 
+                                    console.log("date du rendez-vous souhaité : "+userinfo['rdv_date']);
+                                  }
+                                  if (entitiesArray['hour'] != undefined)
+                                  {
+                                    var info = entitiesArray['hour']['value'];
+                                    userinfo['rdv_hour'] = info.toLowerCase();
+                                    console.log("heure du rendez-vous souhaitée : "+userinfo['rdv_hour']);
+                                  }
+                                  break;
+          case "get_name":        
+          case "get_name-1":      if (entitiesArray['person'] != undefined)
+                                  {
+                                    var info = entitiesArray['person']['value'];
+                                    userinfo['identity'] = info.toLowerCase();
+                                    console.log("user's identity : "+ userinfo['identity']);
+                                  }
+                                  if (entitiesArray['email'] != undefined)
+                                  {
+                                    var info = entitiesArray['email']['local']+"@"+entitiesArray['email']['domain'];
+                                    userinfo['email'] = info;
+                                    console.log("user's email : "+ userinfo['email']);
+                                  }
+                                  break;
+          default:                myReply = null;
+                                  break;
+        }
       }
+      console.log("userinfo keys");
+      printObjectKeys(userinfo);
       /*if (actionSlug == 'greetings')
       {
         console.log ('action : '+result.action.slug);
@@ -77,7 +165,9 @@ const replyMessage = (message) => {
       }*/
 
        
-      result.replies.forEach(replyContent => message.addReply((myReply != null)? myReply: { type: 'text', content: replyContent }));
+      //result.replies.forEach(replyContent => message.addReply((myReply != null)? myReply: { type: 'text', content: replyContent }));
+      /*if (myreply != null)
+        result.replies.forEach(replyContent => message.addReply({ type: 'text', content: replyContent }));*/
       //result.replies.forEach(replyContent => message.addReply({ type: 'quickReplies', content:  {title: 'titre', buttons: [{title: 'je cherche un service', value: 'je cherche un service'},{title: 'je fournis un service', value: 'je fournis un service'}]}}))
       result.replies.forEach(replyContent => message.addReply({ type: 'text', content: replyContent })) // <==== message à renvoyer ici
       //result.replies.forEach(replyContent => message.addReply({ type: 'text', content: replyContent }))
@@ -128,6 +218,7 @@ function getKeys(jsonData)
  */
 function getEntities(jsonData)
 {
+  console.log("fonction getEntities");
   var arr = [];
   var subArr = new Array();
   var jsonArray = getKeys(jsonData);
@@ -138,35 +229,52 @@ function getEntities(jsonData)
   var val;
   var subVal;
   var subsubVal;
+
   if (ent != null)
   {
-    //console.log("ent n'est pas nul");
+    console.log("ent n'est pas nul");
     for(var x in ent)
     {
       key = x;
-      //console.log("key = "+key);
+      console.log("key = "+key);
       val = ent[key];
       //console.log("val = "+JSON.stringify(val));
       //console.log("val.length = "+val.length);
       for(var y in val)
       {
         subKey = y;
-        //console.log("subKey = "+subKey);
+        console.log("subKey = "+subKey);
         subVal = val[subKey];
-        //console.log("subVal = "+JSON.stringify(subVal));
+        console.log("subVal = "+JSON.stringify(subVal));
         for (var z in subVal)
         {
           subsubKey = z;
-          //console.log("subsubKey = "+subsubKey);
+          console.log("subsubKey = "+subsubKey);
           subsubVal = subVal[subsubKey];
-          //console.log("subsubVal = "+subsubVal);
+          console.log("subsubVal = "+subsubVal);
           subArr[subsubKey] = subsubVal;
           arr[key] = subArr;
-          //console.log('arr["'+key+'"]["'+subsubKey+'"] = '+subsubVal);
+          console.log('arr["'+key+'"]["'+subsubKey+'"] = '+subsubVal);
           //console.log("vérification : "+arr[key][subsubKey]);
         }
       }
-      //console.log('arr["greeting"]["value"] = '+arr["greeting"]["value"]);
+      if (arr["greeting"] != undefined)
+        console.log('arr["greeting"]["rvalue"] = '+ arr["greeting"]["value"]);
+      else if (arr["cherche_service"] != undefined)
+        console.log('arr["cherche_service"]["value"] = '+ arr["cherche_service"]["value"]);
+      else if (arr["job_title"] != undefined)
+        console.log('arr["job_title"]["value"] = '+ arr["job_title"]["value"]);
+      else if (arr["city"] != undefined)
+        console.log('arr["city"]["value"] = '+ arr["city"]["value"]);
+      else if (arr["hour"] != undefined)
+        console.log('arr["hour"]["value"] = '+ arr["hour"]["value"]);
+      else if (arr["date"] != undefined)
+        console.log('arr["date"]["value"] = '+ arr["date"]["value"]);
+      else if (arr["person"] != undefined)
+        console.log('arr["person"]["value"] = '+ arr["person"]["value"]);
+      else if (arr["email"] != undefined)
+        console.log('email entity : '+arr["email"]["local"]+'@'+arr["email"]["domain"]);
+
       //console.log("arr.length = "+Object.keys(arr).length);
       //console.log("version string de arr = "+JSON.stringify(arr));
     } 
@@ -217,7 +325,7 @@ function makeQuickReply(btntitle, buttons)
     }
   }
   console.log('makeQuickReply() result : '+JSON.stringify(quickRep));
-  return quickRep;
+  return JSON.parse(quickRep);
 };
 
 /*
@@ -246,7 +354,7 @@ function makeCard(cardTitle, cardSubtitle, cardImageUrl, buttons)
       card['content']['buttons'].push(btn);
     }
   }
-  return card;
+  return JSON.parse(card);
 };
 
 /*
@@ -315,7 +423,7 @@ function makeCarousel(carouselTitle, cardArray)
   var carousel = {};
   carousel['type'] = 'carousel';
   carousel['content'] = cardArray;
-  return carousel;
+  return JSON.parse(carousel);
 };
 
 /*
@@ -344,7 +452,7 @@ function makeElement(elTitle, imageUrl, subtitle, buttons)
       element['buttons'].push(btn);
     }
   }
-  return element;
+  return JSON.parse(element);
 };
 
 /*
@@ -377,7 +485,7 @@ function makeList(elementArray, buttons)
       listMsg['content']['elements'].push(elementArray[i]);
     }
   }
-  return listMsg;
+  return JSON.parse(listMsg);
 };
 
 /*
@@ -391,17 +499,101 @@ function makePicOrVideo(url)
   var msg = {};
   msg['type'] = 'picture';
   msg['content'] = imgUrl;
-  return msg;
+  return JSON.parse(msg);
 };
 
 function getIntent(developper_token, text)
 {
+  console.log("fonction getIntent");
   var requestIntent = new recastai.request(developper_token);
     requestIntent.analyseText(text)
     .then(function(res) 
     {
       var intent = res.intent()
+      console.log("intent = "+JSON.stringify(intent));
       return intent;
-      //var entitiesArray = getEntities(res);
     });
 };
+
+function getDateNow()
+{
+  var now = new Date();
+  var dd = now.getDate();
+  var mm = now.getMonth()+1; //January is 0!
+  var yyyy = now.getFullYear();
+  var hh = now.getHours();
+  var min = now.getMinutes();
+  var ss = now.getSeconds();
+
+  if(dd<10) 
+  {
+      dd='0'+dd;
+  } 
+
+  if(mm<10) 
+  {
+      mm='0'+mm;
+  }
+
+  if (hh<10)
+  {
+    hh='0'+hh;
+  }
+
+  if (min<10)
+  {
+    min='0'+min;
+  }
+
+  if (ss<10)
+  {
+    ss='0'+ss;
+  }
+
+  now = dd+'/'+mm+'/'+yyyy+' '+hh+':'+min+':'+ss;
+  return(now);
+};
+
+(function() {
+    var days = ['samedi','dimanche','lundi','mardi','mercredi','jeudi','vendredi'];
+
+    var months = ['Janvier','Fevrier','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Decembre'];
+
+    Date.prototype.getMonthName = function() {
+        return months[ this.getMonth()+1 ];
+    };
+    Date.prototype.getDayName = function() {
+        return days[ this.getDay()+1 ];
+    };
+})();
+
+function nextDateByDayName(dayname)
+{
+  dayname = dayname.toLowerCase();
+  var days = ['samedi','dimanche','lundi','mardi','mercredi','jeudi','vendredi'];
+  //var _date = new Date();
+  var _dateincr;
+  for(var i=0; i<8; i++)
+  {
+    _dateincr = new Date();
+    _dateincr.setDate(_dateincr.getDate()+i);
+    //_dateincr = _date.setDate(_date.getDate()+i);
+    if (_dateincr.getDayName() == dayname)
+    {
+      if (i == 0) console.log("Ajourd'hui nous sommes "+dayname+", donc "+dayname+" prochain est dans 7 jours");
+      console.log(dayname+" prochain, nous serons le "+_dateincr.getDate()+"/"+(_dateincr.getMonth()+1)+""+_dateincr.getFullYear());
+      return _dateincr;
+    }
+  }
+};
+
+function printObjectKeys(obj)
+{
+  var props="";
+  for (var prop in obj)
+  { 
+    props+= prop +  " => " +obj[prop] + "\n"; 
+    console.log("prop = "+prop);
+  }
+  console.log ("Entity : "+props);
+}
