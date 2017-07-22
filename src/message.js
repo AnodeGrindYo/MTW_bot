@@ -1,4 +1,7 @@
-
+/*
+ * message.js
+ * Ce fichier contient le code de notre bot
+ */
 
 const recastai = require('recastai');
 var fs = require('fs');
@@ -7,26 +10,30 @@ var content = fs.readFileSync("src/private.js")
 vm.runInThisContext(content)
 
 
-// This function is the core of the bot behaviour
+// Cette fonction est le coeur du comportement du bot
 const replyMessage = (message) => {
-  // Instantiate Recast.AI SDK, just for request service
+  // Instancie Recast.AI SDK, juste pour le service de requêtes
   const request = new recastai.request(process.env.REQUEST_TOKEN, process.env.LANGUAGE)
   // Get text from message received
   const text = message.content
 
   console.log('I receive: ', text)
 
-  // Get senderId to catch unique conversation_token
+  // récupère senderId pour obtenir un unique conversation_token
   const senderId = message.senderId
 
-  // Call Recast.AI SDK, through /converse route
+  // Appelle Recast.AI SDK, via /converse
   request.converseText(text, { conversationToken: senderId })
   .then(result => {
+    /*
+    * traitement des messages
+    */
     
     //console.log("DEV_TOKEN : "+DEV_TOKEN);
 
+    // quelques test ici
     var now = new Date();
-    console.log("Aujourd'hui, nous sommes "+now.getDayName());
+    console.log("Aujourd'hui, nous sommes "+now.getDayName()+", soit le "+getDateNow());
     var nextMonday = nextDateByDayName("lundi");
     var devToken = DEV_TOKEN;
     var intent = getIntent(devToken, text);
@@ -37,6 +44,88 @@ const replyMessage = (message) => {
     printObjectKeys(entitiesArray);
     var actionSlug = (result.action != undefined)? result.action.slug : null;
     var userinfo = [];
+    var richMsgSent = false;
+    var greetQuickRep = { type: 'quickReplies', 
+                          content:  
+                          {
+                            title: 'Bonjour, que puis-je faire pour toi?', 
+                            buttons: [
+                            {
+                              title: 'je cherche',
+                              value: 'je cherche un service'
+                            },
+                            {
+                              title: 'je fournis',
+                              value: 'je fournis un service'
+                            }]
+                          }
+                        };
+    var greetCard = { type: 'card',
+                      content:
+                      {
+                        title: 'Bonjour Daniel !',
+                        subtitle: 'Est-ce que tu cherches ou est-ce que tu fournis un service?',
+                        imageUrl: 'https://lh3.googleusercontent.com/peEhPWRJESWXX-67iKK33ETthlCcqY2Fwd_E9TX5vK_HiK54x1ihievmHxOcIbSOc_djvF4FXIgwZ2wdqVYJABpoy--smWlF53E5StTmoT0dtM-UmZPpB-DzZJ01TrqIKqRbidh8xkT_AGzAvIZ2CEDAL259UrSYm-z8KPKf89hl1ZX29E_7b9n-xVxMcWRNO87z6qaVQC-CRXJtp0FaUNVcFKC8GldLUnKNIKUp2l_5TvCXtstVeLydm1XukDweM00PpVERXCMdcYVHhxrfqTg98vhNFmjDZknjQv39q7uZY1vPXZl508QFyVdQly5fneImieuHnpKYzSbUaLAFPcz6F-ZhDZCVXgjdslQnp0EBTPmHxlJfflZt0gYsnRDSk6ExtLmhQknlXjaiqkAQxdB12bEw7ocIhgI0piBB2-9zKEFtvukyjacbB8CQJx6b9zNMv8x4ch_qUgq9KkCnxuHzjh6MYi6w2m0FZkXnr8DIs--j4rPDsE05uxFt6_F_IovAzSOmkyn--00UBZV0dCTTw3mBZ8IhyQLDNu4sM8dCkKZ1N_FPW1gOqbw5NUI1pR-Bmg4wfP3Xmvl28QehcdQ-3Re0su9fRvZ4hkbMqvMs_Qt_9JTygg63z3-21ZH9qaiLsEqQUjnU2gO3I8ecUcJ3JLsf7KjqtMFzlx5BMmK0FQ=w1024-h768-no',
+                        buttons: [
+                        {
+                          title: 'je cherche', 
+                          value: 'je cherche un service'
+                        },
+                        {
+                          title: 'je fournis', 
+                          value: 'je fournis un service'
+                        }]
+                      }
+                    };
+    var lawyersCarousel = { type: "carousel",
+                            content: 
+                            [
+                            {
+                              title: "Marcel Fecteau",
+                              imageUrl: "https://lh3.googleusercontent.com/C3EQ6t46cWVZCbjijeO3EKD79Ai6S1OgqZ0AQZl3__R_Q5FduwncE8rNMql-mvjhLaixtMjtk18S-S-WHXK4l5mcu31xZe1Q588Ao23QJNUE2_PsunXihbQD3TERucJMLiUU0zcJQfDbvPLa0_3zdtdwZ9ow_ocqkNvWiMucXK5C0khq8O8FV42xXMlbBNo2cmL2qLbA9Rwrrk7bFbvEK2jELnxS8msf9rxlMdGWWFDiZUaemS_EKQd6TcNkPID-ZM2TU4rlxLArywG51FOA-zkVLYaI65-VaX22VKRwR7be1nO6AJ0Qhwo_Oaj3lHxVZHKgg1k5uhDR3fUQvzy4LBliVLosLrEXNuSm7xnSTnQbfpfAo0rYXBhvJNPpN_Enk8CzAUlOSA9Jr9PUlDKvyF_5eLiBMFT3-brhYelDms2bpqsdPViqVPG9I89TuwTTwkOcsyDCV84k2B72EhCOwjKVXrgvxP3BiNrFv5BFCm1Cse7khu_rlv9hfBXwswxN-6VRZ2ZzNS664ep1wxPYeGGV_XuNa16l6PxLDi6e3GQP3lHr1qVLS7rW1E7C_87mC3r9dq9KGdi9bOR0hGO25RSIegvYAvl_RNRZkmr-pVp7Cdms9itaJnebzdEhCkQ87E0xmoFDmfDk3UPH3c3LcXluq3SFJCW-X3MHFGeGLbpS1WM=w1024-h768-no",
+                              buttons: [
+                              {
+                                title: "choisir Marcel Fecteau",
+                                value: "je choisis Marcel Fecteau",
+                                type: "postback"
+                              }]
+                            },
+                            {
+                              title: "Eustache Bonnet",
+                              imageUrl: "https://lh3.googleusercontent.com/0XhNes3zdmwA5VdwavJMP4uZHkDKEzsjvCBiaoBYTlU5U4R11oDUx8oe9ypGHQFiLfZCKSpTnZmhOajo9ipzRvku7rxlp6zhSQqT6YzzjsVne7VXexJaRRCWcWasHBvn3waPBH2_Xi2SIrRnkYRgI2iwO2BlimNsgDK0FFbR8VX1O0kxFoN-o2Z5fbpZbarj-qrfhkoEgXAQN8boQMv_rEzljeclIqCj7dc5dNO2fJCMSclVqYfFxdmcn5IUCXibPPgPMOgnGtmqy-Pn-3ytz3Dw5-_Qnku9mrbVIOh0MElobyccheog9JAjVfZbwQTu6PwD06B5rMf9buoBsVzVTKddZuEr77g91p8NZWKQCPuEqfSiS85e7Cbq7reMKEr4rbdUioHcBn7jgLqDwP2QlSBHSssV4-sVvxCF1MjYqznP0YdcWXNR74nDUBJe-I4e9Nn6nZ4AeNkECQj-cx8SktqoYte297RNeh4Mhp63_-VdmZcLmfsP-X9yEr90smlkG8-GgiUFOO1AVfx0ZLaJu9f4uR9GSE54sxnSsn-KHMaucGcZ1fVqNFl0D76jap7MOHBGgJMd_vwbI1XzNxotYhYRSyXd2ICGhxQMlgR1vXFLDLycFmCFLk4doP3eP-_GUyS0c2HTJh3YvAwE_HRaWFmJ5BT17ez1XC1iuS-5G2Qim7k=w1024-h768-no",
+                              buttons: [
+                              {
+                                title: "choisir Eustache Bonnet",
+                                value: "je choisis Eustache Bonnet",
+                                type: "postback"
+                              }]
+                            },
+                            {
+                              title: "Marjolaine Phaneuf",
+                              imageUrl: "https://lh3.googleusercontent.com/7UHzvRO9sZsp5hDCd3a313D_EA6m4e_1XA1JQcMJtwyy6pSOI5dM2vno2T9CpAev2WUG9cE8naV9p61Y7vdzI7A6Rz4l8PNyf8yeUVfklCg-lk4vfUf123bmZFVpElfGwoHGf_6oQ_SJUjN9NNn8mFtk5UgZ9OYei8RfeYKE9YTG4zZPJE-8vaPXKQPB9U8QWbPyudU_ERfO_24j1_vj8ygoxANl1PF-q75AcpVJNn60S42lGp0W3SfQE-lc5QS1Il_sbsQANegSZlCwdFnddAbonD_3qhO8jr-iQ2PqIKK30dkCwyMoAUlITwhH0g1_R4n-g7dmOjwSBzNrmIfto76VSaDc58Bs2Im_fpjyt5efXyoMgW9mXFISBroo0Yp86YeJ_mm3qAO4zroPSqW5azuRd6YszZPCyXEYoka-kQ_aGwblMuB0fYb-tNkS_HA7EpjoLjLe3gjilfY8TkRAwBQ4p-aggmc7h8BaS2c1oSHMwXim-ou7Xl5Yf1QdgNjeF6H6u7fSC75V868B7Ntqal2iI1Lm7IQlXkHvLgxPGgp50nk3s-bpNuxaWILHjU0CLoLzELTB1qN_dC6COSo3fs-FtKAFO037WbkBzFEIiJN8gzs-qL_ApJupC5FPqoujT7Wo2PeY7B1t3wXrP19vbgyZ7PhzQW7GwGlKKV4mMqQRx7c=w1024-h768-no",
+                              buttons: [
+                              {
+                                title: "choisir Marjolaine Phaneuf",
+                                value: "je choisis Marjolaine Phaneuf",
+                                type: "postback"
+                              }]
+                            }  
+                            ]
+                          };
+    var connectLawyer = { type: 'quickReplies', 
+                          content:  
+                          {
+                            title: '', 
+                            buttons: [
+                            {
+                              title: 'ouvrir une table', 
+                              value: 'https://opentokdemo.tokbox.com/room/mtw?userName=mtw'
+                            }]
+                          }
+                        };
+    var rep;
+    //message.addReply({type: 'text', content:'test'});
+    //message.reply();
 
 
 
@@ -44,38 +133,55 @@ const replyMessage = (message) => {
       console.log('The conversation action is: ', result.action.slug)
     }
 
-    // If there is not any message return by Recast.AI for this current conversation
+    // S'il n'y a pas de messge retourné par recast.ai pour cette conversation
     if (!result.replies.length) {
       message.addReply({ type: 'text', content: 'I don\'t have the reply to this yet :)' })
     } else {
-      // Add each reply received from API to replies stack
-
+      // ajoute chaque réponse au stack de réponses
       var myReply = null;
-      if (result.action.slug != undefined)
-        console.log (result.action.slug);
-      
-      if (actionSlug != null || actionSLug != undefined)
+      if (result.action != undefined)
+      {
+        if (result.action.slug != undefined)
+          console.log (result.action.slug);
+      }
+
+      // vérifie l'action courante, et ajoute les infos extraites à userinfo
+      if (actionSlug != null || actionSlug != undefined)
       {
         switch (actionSlug)
         {
-          case 'greetings':        message.addReply({ type: 'quickReplies', content:  {title: 'titre', buttons: [{title: 'je cherche un service', value: 'je cherche un service'},{title: 'je fournis un service', value: 'je fournis un service'}]}});
+          case 'greetings':        
+                                   message.addReply(greetQuickRep);
+                                   //message.reply(greetQuickRep);
+                                   //rep = greetQuickRep;
+                                   richMsgSent = true;
                                    break;
           case 'job-1':            if (entitiesArray['job_title'] != undefined)
                                    {
-                                     var info = entitiesArray['job']['value'];
-                                     userinfo['job'] = info.toLowerCase();
+                                     var info = entitiesArray['job_title']['value'];
+                                     userinfo['job_title'] = info.toLowerCase();
                                      userinfo['wants'] = 'cherche_service';
                                      console.log("user's job : "+userinfo['job']);
+                                     if (userinfo["job_title"] == "avocat")
+                                    {
+                                      //message.addReply(lawyersCarousel);
+                                      //message.reply(lawyersCarousel);
+                                    }
                                    }
                                   break;
           case 'job':             if (entitiesArray['job_title'] != undefined)
                                    {
-                                     var info = entitiesArray['job']['value'];
-                                     userinfo['job'] = info.toLowerCase();
+                                     var info = entitiesArray['job_title']['value'];
+                                     userinfo['job_title'] = info.toLowerCase();
                                      userinfo['wants'] = 'offre_un_service';
                                      console.log("user's job : "+userinfo['job']);
                                    }
                                   break;
+          case 'chose_profile':   
+                                  break;
+          case "connect_with_pro":  message.addReply(connectLawyer);
+                                    //message.reply(connectLawyer);
+                                    break;
           case 'user_location':   if (entitiesArray['city'] != undefined)
                                   {
                                     var info = entitiesArray['city']['value'];
@@ -124,43 +230,24 @@ const replyMessage = (message) => {
       }
       console.log("userinfo keys");
       printObjectKeys(userinfo);
-      /*if (actionSlug == 'greetings')
-      {
-        console.log ('action : '+result.action.slug);
-        myReply = { type: 'quickReplies', content:  {title: 'titre', buttons: [{title: 'je cherche un service', value: 'je cherche un service'},{title: 'je fournis un service', value: 'je fournis un service'}]}};
-        console.log('test');
-      }
-      else
-      {
-        //console.log(JSON.stringify(replyContent));
-        myReply = null;
-        //myReply = { type: 'text', content: 'my text' };
-        //myReply = { type: 'text', content: replyContent };
-        //result.replies.forEach(replyContent => message.addReply({ type: 'text', content: replyContent }));
-        
-      }*/
-
-       
-      //result.replies.forEach(replyContent => message.addReply((myReply != null)? myReply: { type: 'text', content: replyContent }));
-      /*if (myreply != null)
-        result.replies.forEach(replyContent => message.addReply({ type: 'text', content: replyContent }));*/
-      //result.replies.forEach(replyContent => message.addReply({ type: 'quickReplies', content:  {title: 'titre', buttons: [{title: 'je cherche un service', value: 'je cherche un service'},{title: 'je fournis un service', value: 'je fournis un service'}]}}))
-      result.replies.forEach(replyContent => message.addReply({ type: 'text', content: replyContent })) // <==== message à renvoyer ici
-      //result.replies.forEach(replyContent => message.addReply({ type: 'text', content: replyContent }))
+      console.log("richMsgSent = "+richMsgSent);
+      result.replies.forEach(replyContent => console.log("replyContent : "+replyContent))
+      if (richMsgSent == false) result.replies.forEach(replyContent => message.addReply({ type: 'text', content: replyContent })) // <==== message à renvoyer ici
+      console.log("Object.keys(result.replies).length : "+Object.keys(result.replies).length);
     }
 
-    // Send all replies
-    message.reply()
-    .then(() => {
-      // Do some code after sending messages
-    })
-    .catch(err => {
-      console.error('Error while sending message to channel', err)
-    })
-  })
-  .catch(err => {
-    console.error('Error while sending message to Recast.AI', err)
-  })
+    // Envoyer toutes les réponses
+      message.reply()
+        .then(() => {
+          // Exécuter du code après l'envoi des messages
+        })
+        .catch(err => {
+          console.error('Error while sending message to channel', err)
+        })
+      })
+      .catch(err => {
+        console.error('Error while sending message to Recast.AI', err)
+      })
 }
 
 module.exports = replyMessage
@@ -526,7 +613,8 @@ function getDateNow()
     ss='0'+ss;
   }
 
-  now = dd+'/'+mm+'/'+yyyy+' '+hh+':'+min+':'+ss;
+  //now = dd+'/'+mm+'/'+yyyy+' '+hh+':'+min+':'+ss;
+  now = yyyy+'-'+mm+'-'+dd;
   return(now);
 };
 
@@ -553,12 +641,19 @@ function nextDateByDayName(dayname)
   {
     _dateincr = new Date();
     _dateincr.setDate(_dateincr.getDate()+i);
+    console.log("i = "+i);
     //_dateincr = _date.setDate(_date.getDate()+i);
     if (_dateincr.getDayName() == dayname)
     {
       if (i == 0) console.log("Ajourd'hui nous sommes "+dayname+", donc "+dayname+" prochain est dans 7 jours");
-      console.log(dayname+" prochain, nous serons le "+_dateincr.getDate()+"/"+(_dateincr.getMonth()+1)+""+_dateincr.getFullYear());
-      return _dateincr;
+      //console.log(dayname+" prochain, nous serons le "+_dateincr.getDate()+"/"+(_dateincr.getMonth()+1)+"/"+_dateincr.getFullYear());
+      var yy = _dateincr.getFullYear();
+      var mm = _dateincr.getMonth()+1;
+      var dd = _dateincr.getDate();
+      if (mm < 10) mm = '0'+mm;
+      if (dd < 10) dd = '0'+dd;
+      console.log("le prochain "+dayname+" sera le "+yy+'-'+mm+'-'+dd);
+      return yy+'-'+mm+'-'+dd;
     }
   }
 };
